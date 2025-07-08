@@ -62,6 +62,10 @@ let _raycaster: _THREE.Raycaster;
 
 export class CameraControls extends EventDispatcher {
 
+	onPointerDown: ( event: PointerEvent ) => void;
+	onMouseWheel: ( event: WheelEvent ) => void;
+	onContextMenu: ( event: Event ) => void;
+
 	/**
 	 * Injects THREE as the dependency. You can then proceed to use CameraControls.
 	 *
@@ -141,8 +145,8 @@ export class CameraControls extends EventDispatcher {
 	}
 
 	/**
-	 * Minimum vertical angle in radians.  
-	 * The angle has to be between `0` and `.maxPolarAngle` inclusive.  
+	 * Minimum vertical angle in radians.
+	 * The angle has to be between `0` and `.maxPolarAngle` inclusive.
 	 * The default value is `0`.
 	 *
 	 * e.g.
@@ -154,8 +158,8 @@ export class CameraControls extends EventDispatcher {
 	minPolarAngle = 0; // radians
 
 	/**
-	 * Maximum vertical angle in radians.  
-	 * The angle has to be between `.maxPolarAngle` and `Math.PI` inclusive.  
+	 * Maximum vertical angle in radians.
+	 * The angle has to be between `.maxPolarAngle` and `Math.PI` inclusive.
 	 * The default value is `Math.PI`.
 	 *
 	 * e.g.
@@ -167,8 +171,8 @@ export class CameraControls extends EventDispatcher {
 	maxPolarAngle = Math.PI; // radians
 
 	/**
-	 * Minimum horizontal angle in radians.  
-	 * The angle has to be less than `.maxAzimuthAngle`.  
+	 * Minimum horizontal angle in radians.
+	 * The angle has to be less than `.maxAzimuthAngle`.
 	 * The default value is `- Infinity`.
 	 *
 	 * e.g.
@@ -180,8 +184,8 @@ export class CameraControls extends EventDispatcher {
 	minAzimuthAngle = - Infinity; // radians
 
 	/**
-	 * Maximum horizontal angle in radians.  
-	 * The angle has to be greater than `.minAzimuthAngle`.  
+	 * Maximum horizontal angle in radians.
+	 * The angle has to be greater than `.minAzimuthAngle`.
 	 * The default value is `Infinity`.
 	 *
 	 * e.g.
@@ -194,21 +198,21 @@ export class CameraControls extends EventDispatcher {
 
 	// How far you can dolly in and out ( PerspectiveCamera only )
 	/**
-	 * Minimum distance for dolly. The value must be higher than `0`. Default is `Number.EPSILON`.  
+	 * Minimum distance for dolly. The value must be higher than `0`. Default is `Number.EPSILON`.
 	 * PerspectiveCamera only.
 	 * @category Properties
 	 */
 	minDistance = Number.EPSILON;
 
 	/**
-	 * Maximum distance for dolly. The value must be higher than `minDistance`. Default is `Infinity`.  
+	 * Maximum distance for dolly. The value must be higher than `minDistance`. Default is `Infinity`.
 	 * PerspectiveCamera only.
 	 * @category Properties
 	 */
 	maxDistance = Infinity;
 
 	/**
-	 * `true` to enable Infinity Dolly for wheel and pinch. Use this with `minDistance` and `maxDistance`  
+	 * `true` to enable Infinity Dolly for wheel and pinch. Use this with `minDistance` and `maxDistance`
 	 * If the Dolly distance is less (or over) than the `minDistance` (or `maxDistance`), `infinityDolly` will keep the distance and pushes the target position instead.
 	 * @category Properties
 	 */
@@ -296,7 +300,7 @@ export class CameraControls extends EventDispatcher {
 	restThreshold = 0.01;
 
 	/**
-	 * An array of Meshes to collide with camera.  
+	 * An array of Meshes to collide with camera.
 	 * Be aware colliderMeshes may decrease performance. The collision test uses 4 raycasters from the camera since the near plane has 4 corners.
 	 * @category Properties
 	 */
@@ -371,8 +375,8 @@ export class CameraControls extends EventDispatcher {
 	protected _viewport: _THREE.Vector4 | null = null;
 
 	// the location of focus, where the object orbits around
-	protected _target: _THREE.Vector3;
-	protected _targetEnd: _THREE.Vector3;
+	_target: _THREE.Vector3;
+	_targetEnd: _THREE.Vector3;
 
 	protected _focalOffset: _THREE.Vector3;
 	protected _focalOffsetEnd: _THREE.Vector3;
@@ -546,6 +550,12 @@ export class CameraControls extends EventDispatcher {
 
 			if ( ! this._enabled || ! this._domElement ) return;
 
+			// const target = event.target as HTMLElement;
+			// target.setPointerCapture( event.pointerId );
+			// target.addEventListener( 'pointercancel', onPointerUp, {
+			// 	once: true,
+			// } );
+
 			if (
 				this._interactiveArea.left !== 0 ||
 				this._interactiveArea.top !== 0 ||
@@ -605,9 +615,12 @@ export class CameraControls extends EventDispatcher {
 			this._domElement.ownerDocument.addEventListener( 'pointerup', onPointerUp );
 
 			this._isDragging = true;
+
 			startDragging( event );
 
 		};
+
+		this.onPointerDown = onPointerDown;
 
 		const onPointerMove = ( event: PointerEvent ) => {
 
@@ -826,6 +839,8 @@ export class CameraControls extends EventDispatcher {
 
 		};
 
+		this.onMouseWheel = onMouseWheel;
+
 		const onContextMenu = ( event: Event ): void => {
 
 			if ( ! this._domElement || ! this._enabled ) return;
@@ -850,6 +865,8 @@ export class CameraControls extends EventDispatcher {
 			event.preventDefault();
 
 		};
+
+		this.onContextMenu = onContextMenu;
 
 		const startDragging = ( event?: PointerEvent ): void => {
 
@@ -1242,14 +1259,14 @@ export class CameraControls extends EventDispatcher {
 
 			this._domElement = domElement;
 
-			this._domElement.style.touchAction = 'none';
-			this._domElement.style.userSelect = 'none';
-			this._domElement.style.webkitUserSelect = 'none';
+			// this._domElement.style.touchAction = 'none';
+			// this._domElement.style.userSelect = 'none';
+			// this._domElement.style.webkitUserSelect = 'none';
 
-			this._domElement.addEventListener( 'pointerdown', onPointerDown );
-			this._domElement.addEventListener( 'pointercancel', onPointerUp );
-			this._domElement.addEventListener( 'wheel', onMouseWheel, { passive: false } );
-			this._domElement.addEventListener( 'contextmenu', onContextMenu );
+			// this._domElement.addEventListener( 'pointerdown', onPointerDown );
+			// this._domElement.addEventListener( 'pointercancel', onPointerUp );
+			// this._domElement.addEventListener( 'wheel', onMouseWheel, { passive: false } );
+			// this._domElement.addEventListener( 'contextmenu', onContextMenu );
 
 		};
 
@@ -1314,7 +1331,7 @@ export class CameraControls extends EventDispatcher {
 	}
 
 	/**
-	 * Whether or not the controls are enabled.  
+	 * Whether or not the controls are enabled.
 	 * `false` to disable user dragging/touch-move, but all methods works.
 	 * @category Properties
 	 */
@@ -1347,7 +1364,7 @@ export class CameraControls extends EventDispatcher {
 	}
 
 	/**
-	 * Returns `true` if the controls are active updating.  
+	 * Returns `true` if the controls are active updating.
 	 * readonly value.
 	 * @category Properties
 	 */
@@ -1358,7 +1375,7 @@ export class CameraControls extends EventDispatcher {
 	}
 
 	/**
-	 * Getter for the current `ACTION`.  
+	 * Getter for the current `ACTION`.
 	 * readonly value.
 	 * @category Properties
 	 */
@@ -1393,7 +1410,7 @@ export class CameraControls extends EventDispatcher {
 
 	// horizontal angle
 	/**
-	 * get/set the azimuth angle (horizontal) in radians.  
+	 * get/set the azimuth angle (horizontal) in radians.
 	 * Every 360 degrees turn is added to `.azimuthAngle` value, which is accumulative.
 	 * @category Properties
 	 */
@@ -1458,8 +1475,8 @@ export class CameraControls extends EventDispatcher {
 	}
 
 	/**
-	 * Set drag-start, touches and wheel enable area in the domElement.  
-	 * each values are between `0` and `1` inclusive, where `0` is left/top and `1` is right/bottom of the screen.  
+	 * Set drag-start, touches and wheel enable area in the domElement.
+	 * each values are between `0` and `1` inclusive, where `0` is left/top and `1` is right/bottom of the screen.
 	 * e.g. `{ x: 0, y: 0, width: 1, height: 1 }` for entire area.
 	 * @category Properties
 	 */
@@ -1586,7 +1603,7 @@ export class CameraControls extends EventDispatcher {
 	}
 
 	/**
-	 * Rotate azimuthal angle(horizontal) and polar angle(vertical) to the given angle.  
+	 * Rotate azimuthal angle(horizontal) and polar angle(vertical) to the given angle.
 	 * Camera view will rotate over the orbit pivot absolutely:
 	 *
 	 * azimuthAngle
@@ -2512,7 +2529,7 @@ export class CameraControls extends EventDispatcher {
 	}
 
 	/**
-	 * Sync camera-up direction.  
+	 * Sync camera-up direction.
 	 * When camera-up vector is changed, `.updateCameraUp()` must be called.
 	 * @category Methods
 	 */
@@ -2524,7 +2541,7 @@ export class CameraControls extends EventDispatcher {
 	}
 
 	/**
-	 * Apply current camera-up direction to the camera.  
+	 * Apply current camera-up direction to the camera.
 	 * The orbit system will be re-initialized with the current position.
 	 * @category Methods
 	 */
@@ -2547,7 +2564,7 @@ export class CameraControls extends EventDispatcher {
 	}
 
 	/**
-	 * Update camera position and directions.  
+	 * Update camera position and directions.
 	 * This should be called in your tick loop every time, and returns true if re-rendering is needed.
 	 * @param delta
 	 * @returns updated
@@ -2859,6 +2876,30 @@ export class CameraControls extends EventDispatcher {
 			focalOffset0         : this._focalOffset0.toArray(),
 
 		} );
+
+	}
+
+	getState() {
+
+		return {
+			target               : this._targetEnd.toArray(),
+			position             : _v3A.setFromSpherical( this._sphericalEnd ).applyQuaternion( this._yAxisUpSpaceInverse ).add( this._targetEnd ).toArray(),
+			zoom                 : this._zoomEnd,
+			focalOffset          : this._focalOffsetEnd.toArray(),
+		};
+
+	}
+
+	setState( obj: ReturnType<typeof this.getState>, enableTransition: boolean = false ) {
+
+		this.moveTo( obj.target[ 0 ], obj.target[ 1 ], obj.target[ 2 ], enableTransition );
+		_sphericalA.setFromVector3( _v3A.fromArray( obj.position ).sub( this._targetEnd ).applyQuaternion( this._yAxisUpSpace ) );
+		this.rotateTo( _sphericalA.theta, _sphericalA.phi, enableTransition );
+		this.dollyTo( _sphericalA.radius, enableTransition );
+		this.zoomTo( obj.zoom, enableTransition );
+		this.setFocalOffset( obj.focalOffset[ 0 ], obj.focalOffset[ 1 ], obj.focalOffset[ 2 ], enableTransition );
+
+		this._needsUpdate = true;
 
 	}
 
